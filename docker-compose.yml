@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16
+    container_name: axia_db
+    restart: always
+    environment:
+      POSTGRES_DB: axia_livro
+      POSTGRES_USER: axia
+      POSTGRES_PASSWORD: axia123
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - axia_net
+
+  web:
+    build: .
+    container_name: axia_web
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DJANGO_SECRET_KEY: "troque-essa-chave"
+      DJANGO_DEBUG: "0"
+      DB_NAME: axia_livro
+      DB_USER: axia
+      DB_PASSWORD: axia123
+      DB_HOST: db
+      DB_PORT: "5432"
+      ALLOWED_HOSTS: "*"
+    volumes:
+      - static_volume:/app/staticfiles
+    networks:
+      - axia_net
+
+  nginx:
+    image: nginx:alpine
+    container_name: axia_nginx
+    restart: always
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_volume:/static:ro
+    networks:
+      - axia_net
+
+volumes:
+  pgdata:
+  static_volume:
+
+networks:
+  axia_net:

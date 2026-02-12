@@ -1,0 +1,130 @@
+{% extends "livro_monitoramento/base_axia.html" %}
+{% block title %}Logs • Axia{% endblock %}
+{% block header_title %}Logs do Livro{% endblock %}
+
+{% block content %}
+
+<div class="toolbar">
+  <button class="btn btn-ghost" type="button" id="toggleAll">
+    ⬇️ Expandir
+  </button>
+
+  <form method="get" class="filters-inline">
+    <input class="input" name="q" value="{{ request.GET.q }}" placeholder="Buscar (título/usuário)..." autocomplete="off" />
+
+    {{ filter.form.tipo }}
+    {{ filter.form.de }}
+    {{ filter.form.ate }}
+
+    <button class="btn btn-primary" type="submit">Filtrar</button>
+    <a class="btn btn-ghost" href="{% url 'livro:logs' %}">Limpar</a>
+  </form>
+</div>
+
+<div class="card" style="margin-top:14px;">
+  <div class="card-head">
+    <div class="card-title">Auditoria</div>
+    <div class="muted">Somente leitura • clique para expandir e ver detalhes</div>
+  </div>
+
+  <div class="list">
+    {% for l in logs %}
+      <details class="row">
+        <summary class="row-summary">
+          <div class="row-left">
+            <span class="badge">{{ l.get_acao_display }}</span>
+            {% if l.tipo %}<span class="badge">{{ l.tipo.nome }}</span>{% endif %}
+            <span class="row-title">{{ l.titulo|default:"(sem título)" }}</span>
+          </div>
+
+          <div class="row-right">
+            <span class="muted">{{ l.criado_em|date:"d/m/Y H:i" }}</span>
+            <span class="muted">•</span>
+            <span class="muted">
+              {% if l.usuario %}
+                {{ l.usuario.get_full_name|default:l.usuario.username }}
+              {% else %}
+                (sistema)
+              {% endif %}
+            </span>
+          </div>
+        </summary>
+
+        <div class="row-body">
+          {% if l.acao == "UPDATE" and l.detalhes %}
+            <div class="text">
+              <strong>Alterações:</strong>
+              <ul>
+                {% for campo, v in l.detalhes.items %}
+                  <li>
+                    <strong>{{ campo|capfirst }}</strong>:
+                    <em>{{ v.old|default:"(vazio)" }}</em>
+                    &nbsp;→&nbsp;
+                    <em>{{ v.new|default:"(vazio)" }}</em>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% else %}
+            <div class="text">
+              {% if l.acao == "CREATE" %}
+                Registro criado.
+              {% elif l.acao == "DELETE" %}
+                Registro excluído.
+              {% else %}
+                Sem detalhes adicionais.
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </details>
+    {% empty %}
+      <div class="empty">Nenhum log encontrado.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+(function(){
+  const toggleAllBtn = document.getElementById("toggleAll");
+
+  function getRows(){
+    return Array.from(document.querySelectorAll(".list details.row"));
+  }
+
+  function anyClosed(rows){
+    return rows.some(d => !d.open);
+  }
+
+  function setBtn(expanded){
+    if(!toggleAllBtn) return;
+    toggleAllBtn.innerHTML = expanded ? "⬆️ Recolher" : "⬇️ Expandir";
+  }
+
+  function refreshToggleAll(){
+    const rows = getRows();
+    if(rows.length === 0){ setBtn(false); return; }
+    const expanded = rows.every(d => d.open);
+    setBtn(expanded);
+  }
+
+  if(toggleAllBtn){
+    toggleAllBtn.addEventListener("click", () => {
+      const rows = getRows();
+      const shouldOpen = anyClosed(rows);
+      rows.forEach(d => d.open = shouldOpen);
+      setBtn(shouldOpen);
+    });
+
+    document.addEventListener("toggle", (e) => {
+      if(e.target && e.target.matches("details.row")){
+        refreshToggleAll();
+      }
+    }, true);
+
+    refreshToggleAll();
+  }
+})();
+</script>
+
+{% endblock %}

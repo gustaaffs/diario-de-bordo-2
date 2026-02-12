@@ -1,0 +1,222 @@
+{% extends "livro_monitoramento/base_axia.html" %}
+{% block title %}Livro • Axia{% endblock %}
+{% block header_title %}Livro de Monitoramento{% endblock %}
+
+{% block content %}
+
+<!-- TOOLBAR: filtros sempre; botões extras só para logado -->
+<div class="toolbar">
+
+  <button class="btn btn-ghost" type="button" id="toggleAll">
+    ⬇️ Expandir
+  </button>
+
+  {% if request.user.is_authenticated %}
+    <button class="btn btn-primary" type="button" id="toggleAddPanel">
+      ➕ Adicionar Registro
+    </button>
+  {% endif %}
+
+  <form method="get" class="filters-inline"
+        {% if not request.user.is_authenticated %}style="justify-content:flex-start"{% endif %}>
+
+    <input
+      class="input"
+      name="q"
+      value="{{ request.GET.q }}"
+      placeholder="Buscar (texto)…"
+      autocomplete="off"
+    />
+
+    <!-- Tipo (ModelChoiceFilter / FK TipoRegistro) -->
+    {{ filter.form.tipo }}
+
+    <!-- Range de data -->
+    {{ filter.form.de }}
+    {{ filter.form.ate }}
+
+    <button class="btn btn-primary" type="submit">Filtrar</button>
+    <a class="btn btn-ghost" href="{% url 'livro:home' %}">Limpar</a>
+  </form>
+</div>
+
+{% if request.user.is_authenticated %}
+  <!-- PAINEL EXPANSÍVEL: NOVO REGISTRO -->
+  <!-- ✅ Começa fechado -->
+  <div class="collapse" id="addPanel" aria-hidden="true" hidden>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Novo registro</div>
+        <div class="muted">Incidente, DC, ambiente ou info importante</div>
+      </div>
+
+      <!-- ✅ id para reset -->
+      <form method="post" class="form" id="addForm">
+        {% csrf_token %}
+
+        <div class="grid-2">
+          <div class="field">
+            <label>Tipo</label>
+            {{ form.tipo }}
+          </div>
+          <div class="field">
+            <label>Título</label>
+            {{ form.titulo }}
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Descrição</label>
+          {{ form.texto }}
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Salvar</button>
+          <button class="btn btn-ghost" type="button" id="cancelAddPanel">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endif %}
+
+<!-- LISTA DE REGISTROS -->
+<div class="card" style="margin-top:14px;">
+  <div class="card-head">
+    <div class="card-title">Registros</div>
+    <div class="muted">Clique para expandir e ver o detalhe</div>
+  </div>
+
+  <div class="list">
+    {% for r in registros %}
+      <details class="row">
+        <summary class="row-summary">
+          <div class="row-left">
+            <span class="badge">{{ r.tipo.nome }}</span>
+            <span class="row-title">{{ r.titulo }}</span>
+          </div>
+
+          <div class="row-right">
+            <span class="muted">{{ r.criado_em|date:"d/m/Y H:i" }}</span>
+            <span class="muted">•</span>
+            <span class="muted">{{ r.autor.get_full_name|default:r.autor.username }}</span>
+
+            {% if request.user.is_authenticated %}
+              {% if request.user.is_staff or r.autor_id == request.user.id %}
+                <a class="iconbtn" href="{% url 'livro:editar' r.id %}" title="Editar registro">✏️</a>
+
+                <form method="post"
+                      action="{% url 'livro:excluir' r.id %}"
+                      class="iconform"
+                      onsubmit="return confirm('Excluir este registro? Essa ação não pode ser desfeita.');">
+                  {% csrf_token %}
+                  <button type="submit" class="iconbtn danger" title="Excluir registro">🗑️</button>
+                </form>
+              {% endif %}
+            {% endif %}
+          </div>
+        </summary>
+
+        <div class="row-body">
+          <div class="text">
+            {{ r.texto|linebreaksbr }}
+          </div>
+        </div>
+      </details>
+    {% empty %}
+      <div class="empty">
+        Nenhum registro encontrado com os filtros atuais.
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+(function(){
+  // =============================
+  // Expandir / Recolher todos
+  // =============================
+  const toggleAllBtn = document.getElementById("toggleAll");
+
+  function getRows(){
+    return Array.from(document.querySelectorAll(".list details.row"));
+  }
+
+  function anyClosed(rows){
+    return rows.some(d => !d.open);
+  }
+
+  function setBtn(expanded){
+    if(!toggleAllBtn) return;
+    toggleAllBtn.innerHTML = expanded ? "⬆️ Recolher" : "⬇️ Expandir";
+  }
+
+  function refreshToggleAll(){
+    const rows = getRows();
+    if(rows.length === 0){
+      setBtn(false);
+      return;
+    }
+    const expanded = rows.every(d => d.open);
+    setBtn(expanded);
+  }
+
+  if(toggleAllBtn){
+    toggleAllBtn.addEventListener("click", () => {
+      const rows = getRows();
+      const shouldOpen = anyClosed(rows);
+      rows.forEach(d => d.open = shouldOpen);
+      setBtn(shouldOpen);
+    });
+
+    document.addEventListener("toggle", (e) => {
+      if(e.target && e.target.matches("details.row")){
+        refreshToggleAll();
+      }
+    }, true);
+
+    refreshToggleAll();
+  }
+
+  // =============================
+  // Painel "Adicionar Registro"
+  // =============================
+  const addBtn = document.getElementById("toggleAddPanel");
+  const panel = document.getElementById("addPanel");
+  const cancel = document.getElementById("cancelAddPanel");
+  const form = document.getElementById("addForm");
+
+  function openPanel(){
+    if(!panel) return;
+    panel.hidden = false;
+    panel.classList.add("show");
+    panel.setAttribute("aria-hidden", "false");
+
+    const first = panel.querySelector("select, input, textarea");
+    if(first) first.focus({ preventScroll:true });
+
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function closePanel(){
+    if(!panel) return;
+    panel.classList.remove("show");
+    panel.setAttribute("aria-hidden", "true");
+    panel.hidden = true;
+
+    if(form) form.reset();
+  }
+
+  if(addBtn && panel){
+    addBtn.addEventListener("click", () => {
+      if(panel.hidden) openPanel();
+      else closePanel();
+    });
+  }
+
+  if(cancel){
+    cancel.addEventListener("click", closePanel);
+  }
+})();
+</script>
+
+{% endblock %}

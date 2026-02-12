@@ -1,0 +1,139 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Livro de Monitoramento{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="{% static 'livro_monitoramento/axia.css' %}?v=20">
+</head>
+
+<body>
+<div class="layout">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="brand-title">Axia NOC</div>
+        <div class="brand-sub">Livro de Monitoramento</div>
+      </div>
+    </div>
+
+    <nav class="menu">
+      <a
+        href="{% url 'livro:links' %}"
+        class="menu-item {% if request.resolver_match.app_name == 'livro' and request.resolver_match.url_name == 'links' %}active{% endif %}">
+        <span class="ico">📌</span>
+        <span>Informações de Apoio</span>
+      </a>
+
+      <a
+        href="{% url 'livro:home' %}"
+        class="menu-item {% if request.resolver_match.app_name == 'livro' and request.resolver_match.url_name == 'home' %}active{% endif %}">
+        <span class="ico">📘</span>
+        <span>Livro</span>
+      </a>
+
+      <a
+        href="{% url 'livro:logs' %}"
+        class="menu-item {% if request.resolver_match.app_name == 'livro' and request.resolver_match.url_name == 'logs' %}active{% endif %}">
+        <span class="ico">🧾</span>
+        <span>Auditoria</span>
+      </a>
+
+      {% if request.user.is_staff %}
+        <a href="/admin/" class="menu-item">
+          <span class="ico">⚙️</span>
+          <span>Admin</span>
+        </a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+      {% if request.user.is_authenticated %}
+        <div class="userchip">
+          <div class="userchip-name">
+            {{ request.user.get_full_name|default:request.user.username }}
+          </div>
+          <div class="userchip-sub">logado</div>
+        </div>
+      {% else %}
+        <div class="userchip">
+          <div class="userchip-name">Visitante</div>
+          <div class="userchip-sub">visualização pública</div>
+        </div>
+      {% endif %}
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+
+    <!-- ================= TOPBAR ================= -->
+    <header class="topbar">
+      <div class="topbar-title">
+        {% block header_title %}Livro de Monitoramento{% endblock %}
+      </div>
+
+      <div class="topbar-actions">
+
+        <!-- Toggle Tema -->
+        <button type="button" class="btn btn-ghost" id="themeToggle">
+          <span id="themeIcon">🌙</span>
+          <span id="themeText">Escuro</span>
+        </button>
+
+        {% if request.user.is_authenticated %}
+          <a href="{% url 'logout_page' %}" class="btn btn-ghost">Sair</a>
+        {% else %}
+          <a href="{% url 'login_page' %}" class="btn btn-ghost">Entrar</a>
+        {% endif %}
+      </div>
+    </header>
+
+    <!-- ================= CONTENT ================= -->
+    <section class="content">
+      {% block content %}{% endblock %}
+    </section>
+
+  </main>
+</div>
+
+<!-- ================= SCRIPT: THEME ================= -->
+<script>
+(function () {
+  const html = document.documentElement;
+  const STORAGE_KEY = "axia_theme";
+
+  const btn = document.getElementById("themeToggle");
+  const icon = document.getElementById("themeIcon");
+  const text = document.getElementById("themeText");
+
+  function apply(theme) {
+    html.setAttribute("data-theme", theme);
+    if (icon) icon.textContent = theme === "light" ? "☀️" : "🌙";
+    if (text) text.textContent = theme === "light" ? "Claro" : "Escuro";
+  }
+
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const prefersLight = window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: light)").matches;
+
+  apply(saved || (prefersLight ? "light" : "dark"));
+
+  if (btn) {
+    btn.addEventListener("click", function () {
+      const current = html.getAttribute("data-theme") || "dark";
+      const next = current === "dark" ? "light" : "dark";
+      localStorage.setItem(STORAGE_KEY, next);
+      apply(next);
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

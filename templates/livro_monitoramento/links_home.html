@@ -1,0 +1,190 @@
+{% extends "livro_monitoramento/base_axia.html" %}
+{% block title %}Informações de Apoio • Axia{% endblock %}
+{% block header_title %}Informações de Apoio{% endblock %}
+
+{% block content %}
+
+<div class="toolbar">
+  <div class="support-search">
+    <span class="support-search-ico">🔎</span>
+    <input
+      class="input support-search-input"
+      id="supportSearch"
+      placeholder="Buscar em todas as categorias..."
+      autocomplete="off"
+    >
+  </div>
+  <div class="support-stats muted" id="supportStats"></div>
+</div>
+
+{% if categorias or sem_categoria %}
+
+  {% for cat in categorias %}
+    <div class="support-category-block">
+      <div class="support-category-title">
+        <span>📌 {{ cat.nome }}</span>
+        <span class="muted">{{ cat.qtd }} item(ns)</span>
+      </div>
+
+      <div class="support-grid">
+        {% for l in cat.itens.all %}
+          <article
+            class="support-card"
+            data-search="{{ l.titulo }} {{ l.descricao }} {{ l.conteudo }} {{ l.url }} {{ cat.nome }}"
+          >
+            <div class="support-head">
+              <div class="support-head-left">
+                <div class="support-ico">{{ l.icone|default:"📌" }}</div>
+
+                <div class="support-titles">
+                  <div class="support-title">{{ l.titulo }}</div>
+                  {% if l.descricao %}
+                    <div class="support-desc muted">{{ l.descricao }}</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="support-badges">
+                {% if l.url %}<span class="pill">Link</span>{% endif %}
+                {% if l.conteudo %}<span class="pill">Info</span>{% endif %}
+              </div>
+            </div>
+
+            {% if l.conteudo %}
+              <div class="support-body text">
+                {{ l.conteudo|linebreaksbr }}
+              </div>
+            {% endif %}
+
+            <div class="support-actions">
+              {% if l.url %}
+                <a class="btn btn-primary" href="{{ l.url }}" target="_blank" rel="noopener">Abrir</a>
+                <button class="btn btn-ghost" type="button" data-copy="{{ l.url }}" onclick="copySupport(this)">Copiar</button>
+              {% else %}
+                {% if l.conteudo %}
+                  <button class="btn btn-ghost" type="button" onclick="copySupportText(this)">Copiar info</button>
+                {% endif %}
+              {% endif %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+
+  {% if sem_categoria %}
+    <div class="support-category-block">
+      <div class="support-category-title">
+        <span>📌 Sem categoria</span>
+        <span class="muted">{{ sem_categoria|length }} item(ns)</span>
+      </div>
+
+      <div class="support-grid">
+        {% for l in sem_categoria %}
+          <article
+            class="support-card"
+            data-search="{{ l.titulo }} {{ l.descricao }} {{ l.conteudo }} {{ l.url }} sem categoria"
+          >
+            <div class="support-head">
+              <div class="support-head-left">
+                <div class="support-ico">{{ l.icone|default:"📌" }}</div>
+
+                <div class="support-titles">
+                  <div class="support-title">{{ l.titulo }}</div>
+                  {% if l.descricao %}
+                    <div class="support-desc muted">{{ l.descricao }}</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="support-badges">
+                {% if l.url %}<span class="pill">Link</span>{% endif %}
+                {% if l.conteudo %}<span class="pill">Info</span>{% endif %}
+              </div>
+            </div>
+
+            {% if l.conteudo %}
+              <div class="support-body text">
+                {{ l.conteudo|linebreaksbr }}
+              </div>
+            {% endif %}
+
+            <div class="support-actions">
+              {% if l.url %}
+                <a class="btn btn-primary" href="{{ l.url }}" target="_blank" rel="noopener">Abrir</a>
+                <button class="btn btn-ghost" type="button" data-copy="{{ l.url }}" onclick="copySupport(this)">Copiar</button>
+              {% else %}
+                {% if l.conteudo %}
+                  <button class="btn btn-ghost" type="button" onclick="copySupportText(this)">Copiar info</button>
+                {% endif %}
+              {% endif %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+{% else %}
+  <div class="empty">
+    Nenhuma informação cadastrada ainda. Peça para o Admin criar categorias e adicionar itens.
+  </div>
+{% endif %}
+
+<script>
+(function(){
+  const input = document.getElementById("supportSearch");
+  const stats = document.getElementById("supportStats");
+  const cards = Array.from(document.querySelectorAll(".support-card"));
+
+  function normalize(s){
+    return (s || "")
+      .toString()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function refresh(){
+    const visible = cards.filter(c => c.style.display !== "none").length;
+    if (stats) stats.textContent = `${visible} de ${cards.length} itens`;
+  }
+
+  if(input){
+    input.addEventListener("input", () => {
+      const q = normalize(input.value);
+      cards.forEach(card => {
+        const hay = normalize(card.getAttribute("data-search"));
+        card.style.display = (!q || hay.includes(q)) ? "" : "none";
+      });
+      refresh();
+    });
+  }
+
+  window.copySupport = function(btn){
+    const url = btn.getAttribute("data-copy");
+    if(!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+      const old = btn.textContent;
+      btn.textContent = "Copiado ✅";
+      setTimeout(() => btn.textContent = old, 1200);
+    });
+  }
+
+  window.copySupportText = function(btn){
+    const card = btn.closest(".support-card");
+    const textEl = card ? card.querySelector(".support-body") : null;
+    const text = textEl ? textEl.innerText.trim() : "";
+    if(!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      const old = btn.textContent;
+      btn.textContent = "Copiado ✅";
+      setTimeout(() => btn.textContent = old, 1200);
+    });
+  }
+
+  refresh();
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "livro_monitoramento/base_axia.html" %}
+{% block title %}Editar • Axia{% endblock %}
+{% block header_title %}Editar Registro{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-head">
+    <div class="card-title">Editar registro</div>
+    <div class="muted">Atualize as informações e salve</div>
+  </div>
+
+  <form method="post" class="form">
+    {% csrf_token %}
+
+    <div class="grid-2">
+      <div class="field">
+        <label>Tipo</label>
+        {{ form.tipo }}
+      </div>
+      <div class="field">
+        <label>Título</label>
+        {{ form.titulo }}
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Descrição</label>
+      {{ form.texto }}
+    </div>
+
+    <div class="field">
+      <label>Etiquetas</label>
+      <div class="tagbox">
+        {{ form.etiquetas }}
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">Salvar alterações</button>
+      <a class="btn btn-ghost" href="{% url 'livro:home' %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

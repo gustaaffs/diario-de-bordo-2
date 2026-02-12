@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Login • Axia NOC</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'livro_monitoramento/axia.css' %}?v=20">
+</head>
+
+<body class="login-page">
+
+  <!-- TOPO -->
+  <div class="login-topbar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <div>
+        <div class="brand-title">Axia NOC</div>
+        <div class="brand-sub">Livro de Monitoramento</div>
+      </div>
+    </div>
+
+    <button id="themeToggle" class="btn btn-ghost">
+      🌙 Escuro
+    </button>
+  </div>
+
+  <!-- LOGIN CARD -->
+  <div class="login-wrapper">
+    <div class="card login-card">
+      <div class="card-head">
+        <div class="card-title">Acesso ao sistema</div>
+        <div class="muted">Entre para adicionar ou editar registros</div>
+      </div>
+
+      <form method="post" class="form">
+        {% csrf_token %}
+
+        <div class="field">
+          <label>Usuário</label>
+          <input type="text" name="username" required autofocus>
+        </div>
+
+        <div class="field">
+          <label>Senha</label>
+          <input type="password" name="password" required>
+        </div>
+
+        {% if form.errors %}
+          <div class="hint" style="color: var(--red)">
+            Usuário ou senha inválidos
+          </div>
+        {% endif %}
+
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">
+            Entrar
+          </button>
+
+          <a href="{% url 'livro:home' %}" class="btn btn-ghost">
+            Visualizar livro
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SCRIPT TEMA -->
+  <script>
+    (function () {
+      const root = document.documentElement;
+      const btn = document.getElementById("themeToggle");
+
+      const saved = localStorage.getItem("axia-theme");
+      if (saved) root.setAttribute("data-theme", saved);
+
+      function refreshLabel() {
+        btn.innerText =
+          root.getAttribute("data-theme") === "light"
+            ? "🌙 Escuro"
+            : "☀️ Claro";
+      }
+
+      refreshLabel();
+
+      btn.addEventListener("click", () => {
+        const next =
+          root.getAttribute("data-theme") === "light" ? "dark" : "light";
+        root.setAttribute("data-theme", next);
+        localStorage.setItem("axia-theme", next);
+        refreshLabel();
+      });
+    })();
+  </script>
+
+</body>
+</html>
