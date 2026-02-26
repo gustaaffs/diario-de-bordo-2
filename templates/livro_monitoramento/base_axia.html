@@ -23,23 +23,20 @@
     </div>
 
     <nav class="menu">
-      <a
-        href="{% url 'livro:links' %}"
-        class="menu-item {% if request.resolver_match.app_name == 'livro' and request.resolver_match.url_name == 'links' %}active{% endif %}">
+      <a href="{% url 'livro:links' %}"
+         class="menu-item {% if request.resolver_match.app_name == 'livro' and request.resolver_match.url_name == 'links' %}active{% endif %}">
         <span class="ico">📌</span>
         <span>Informações de Apoio</span>
       </a>
 
-      <a
-        href="{% url 'livro:home' %}"
-        class="menu-item {% if request.resolver_match.app_name == 'livro' and request.resolver_match.url_name == 'home' %}active{% endif %}">
+      <a href="{% url 'livro:home' %}"
+         class="menu-item {% if request.resolver_match.app_name == 'livro' and request.resolver_match.url_name == 'home' %}active{% endif %}">
         <span class="ico">📘</span>
         <span>Livro</span>
       </a>
 
-      <a
-        href="{% url 'livro:logs' %}"
-        class="menu-item {% if request.resolver_match.app_name == 'livro' and request.resolver_match.url_name == 'logs' %}active{% endif %}">
+      <a href="{% url 'livro:logs' %}"
+         class="menu-item {% if request.resolver_match.app_name == 'livro' and request.resolver_match.url_name == 'logs' %}active{% endif %}">
         <span class="ico">🧾</span>
         <span>Auditoria</span>
       </a>
@@ -78,7 +75,7 @@
         {% block header_title %}Livro de Monitoramento{% endblock %}
       </div>
 
-      <div class="topbar-actions">
+      <div class="topbar-actions" style="display:flex; align-items:center; gap:12px;">
 
         <!-- Toggle Tema -->
         <button type="button" class="btn btn-ghost" id="themeToggle">
@@ -87,7 +84,16 @@
         </button>
 
         {% if request.user.is_authenticated %}
-          <a href="{% url 'logout_page' %}" class="btn btn-ghost">Sair</a>
+
+
+          <a href="{% url 'password_change' %}" class="btn btn-ghost">
+            🔐 Trocar senha
+          </a>
+
+          <a href="{% url 'logout_page' %}" class="btn btn-ghost">
+            Sair
+          </a>
+
         {% else %}
           <a href="{% url 'login_page' %}" class="btn btn-ghost">Entrar</a>
         {% endif %}
