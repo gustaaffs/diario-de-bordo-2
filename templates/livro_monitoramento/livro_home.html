@@ -37,6 +37,11 @@
 
     <button class="btn btn-primary" type="submit">Filtrar</button>
     <a class="btn btn-ghost" href="{% url 'livro:home' %}">Limpar</a>
+    <a class="btn btn-ghost"
+       href="{% url 'livro:exportar_excel' %}?{{ request.GET.urlencode }}"
+       title="Exportar registros filtrados para Excel">
+      📥 Excel
+    </a>
   </form>
 </div>
 

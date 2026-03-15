@@ -1,8 +1,11 @@
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.db.models import Count, Q, Prefetch
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
 
 from .models import Registro, LogAcao, LinkImportante, CategoriaApoio
 from .forms import RegistroForm
@@ -164,3 +167,54 @@ def links_home(request):
         "categorias": categorias,
         "sem_categoria": sem_categoria,
     })
+
+
+def exportar_excel(request):
+    import pytz
+    from django.conf import settings as dj_settings
+
+    qs = Registro.objects.select_related("tipo", "autor").all()
+    f = RegistroFilter(request.GET, queryset=qs)
+    registros = f.qs
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Livro de Monitoramento"
+
+    headers = ["#", "Tipo", "Título", "Descrição", "Autor", "Data/Hora"]
+    header_fill = PatternFill("solid", fgColor="2563EB")
+    header_font = Font(bold=True, color="FFFFFF")
+
+    for col_idx, header in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col_idx, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    tz = pytz.timezone(getattr(dj_settings, "TIME_ZONE", "UTC"))
+
+    for row_idx, r in enumerate(registros, start=2):
+        criado_local = r.criado_em.astimezone(tz).strftime("%d/%m/%Y %H:%M")
+        autor_nome = r.autor.get_full_name() or r.autor.username
+        ws.append([
+            row_idx - 1,
+            r.tipo.nome,
+            r.titulo,
+            r.texto,
+            autor_nome,
+            criado_local,
+        ])
+        ws.cell(row=row_idx, column=4).alignment = Alignment(wrap_text=True)
+
+    col_widths = [6, 20, 40, 60, 25, 18]
+    for col_idx, width in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+    ws.row_dimensions[1].height = 22
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="livro_monitoramento.xlsx"'
+    wb.save(response)
+    return response
