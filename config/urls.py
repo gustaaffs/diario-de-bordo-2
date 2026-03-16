@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from livro_monitoramento import auth_views as custom_auth  # login/logout customizados
+from livro_monitoramento.api_views import ObtainTokenAPIView
 
 urlpatterns = [
 
@@ -66,6 +67,11 @@ urlpatterns = [
     # APP LIVRO
     # =========================
     path("livro/", include("livro_monitoramento.urls")),
+
+    # =========================
+    # API TOKEN
+    # =========================
+    path("api/token/", ObtainTokenAPIView.as_view(), name="api_token"),
 
     # =========================
     # ADMIN
