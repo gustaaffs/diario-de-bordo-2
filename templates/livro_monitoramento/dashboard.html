@@ -1,0 +1,155 @@
+{% extends "livro_monitoramento/base_axia.html" %}
+{% block title %}Dashboard • Axia{% endblock %}
+{% block header_title %}Dashboard do Livro{% endblock %}
+
+{% block content %}
+
+<!-- STAT CARDS -->
+<div class="dash-stats">
+
+  <div class="dash-stat">
+    <div class="dash-stat-ico">📋</div>
+    <div class="dash-stat-body">
+      <div class="dash-stat-label">Total de registros</div>
+      <div class="dash-stat-value">{{ total_registros }}</div>
+    </div>
+  </div>
+
+  <div class="dash-stat dash-stat--today">
+    <div class="dash-stat-ico">📅</div>
+    <div class="dash-stat-body">
+      <div class="dash-stat-label">Registros hoje</div>
+      <div class="dash-stat-value">{{ registros_hoje }}</div>
+    </div>
+  </div>
+
+  <div class="dash-stat">
+    <div class="dash-stat-ico">🏷️</div>
+    <div class="dash-stat-body">
+      <div class="dash-stat-label">Tipos cadastrados</div>
+      <div class="dash-stat-value">{{ total_tipos }}</div>
+    </div>
+  </div>
+
+  <div class="dash-stat">
+    <div class="dash-stat-ico">📈</div>
+    <div class="dash-stat-body">
+      <div class="dash-stat-label">Últimos 7 dias</div>
+      <div class="dash-stat-value">
+        {% for item in serie_7_dias %}{% if forloop.last %}{{ item.total }}{% endif %}{% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MIDDLE ROW: tipo + autor + chart -->
+<div class="dash-row">
+
+  <!-- POR TIPO -->
+  <div class="card dash-panel">
+    <div class="dash-panel-head">
+      <div class="card-title">Registros por tipo</div>
+      <div class="muted" style="font-size:13px;">Distribuição por categoria</div>
+    </div>
+    <div class="dash-rank">
+      {% for item in por_tipo %}
+        {% with max_val=por_tipo.0.total %}
+        <div class="dash-rank-row">
+          <div class="dash-rank-name">{{ item.tipo__nome }}</div>
+          <div class="dash-rank-bar-wrap">
+            <div class="dash-rank-bar" data-pct="{% widthratio item.total max_val 100 %}"></div>
+          </div>
+          <div class="dash-rank-num">{{ item.total }}</div>
+        </div>
+        {% endwith %}
+      {% empty %}
+        <div class="empty">Nenhum dado encontrado.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- POR AUTOR -->
+  <div class="card dash-panel">
+    <div class="dash-panel-head">
+      <div class="card-title">Top autores</div>
+      <div class="muted" style="font-size:13px;">Usuários com mais registros</div>
+    </div>
+    <div class="dash-rank">
+      {% for item in por_autor %}
+        {% with max_val=por_autor.0.total %}
+        <div class="dash-rank-row">
+          <div class="dash-rank-name">{{ item.autor__username }}</div>
+          <div class="dash-rank-bar-wrap">
+            <div class="dash-rank-bar" data-pct="{% widthratio item.total max_val 100 %}"></div>
+          </div>
+          <div class="dash-rank-num">{{ item.total }}</div>
+        </div>
+        {% endwith %}
+      {% empty %}
+        <div class="empty">Nenhum dado encontrado.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- GRÁFICO 7 DIAS -->
+  <div class="card dash-panel">
+    <div class="dash-panel-head">
+      <div class="card-title">Evolução — 7 dias</div>
+      <div class="muted" style="font-size:13px;">Registros por dia</div>
+    </div>
+    <div class="dash-chart">
+      {% for item in serie_7_dias %}
+        <div class="dash-chart-col">
+          <div class="dash-chart-bar-wrap">
+            <div class="dash-chart-bar" data-height="{{ item.total_px }}">
+              {% if item.total > 0 %}<span class="dash-chart-tip">{{ item.total }}</span>{% endif %}
+            </div>
+          </div>
+          <div class="dash-chart-label">{{ item.dia }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<!-- ÚLTIMOS REGISTROS -->
+<div class="card dash-table-card">
+  <div class="dash-panel-head">
+    <div class="card-title">Últimos registros</div>
+    <div class="muted" style="font-size:13px;">Últimos 10 lançamentos</div>
+  </div>
+
+  <div class="dash-table">
+    <div class="dash-table-head">
+      <span>Tipo</span>
+      <span>Título</span>
+      <span>Autor</span>
+      <span>Data</span>
+    </div>
+    {% for r in ultimos_registros %}
+      <div class="dash-table-row">
+        <span><span class="badge">{{ r.tipo.nome }}</span></span>
+        <span class="dash-table-title">{{ r.titulo }}</span>
+        <span class="dash-table-author">{{ r.autor.get_full_name|default:r.autor.username }}</span>
+        <span class="dash-table-date">{{ r.criado_em|date:"d/m/Y H:i" }}</span>
+      </div>
+    {% empty %}
+      <div class="empty" style="margin:12px 0;">Nenhum registro encontrado.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.querySelectorAll('.dash-chart-bar').forEach(function(el) {
+    el.style.height = (el.dataset.height || 0) + 'px';
+  });
+  document.querySelectorAll('.dash-rank-bar').forEach(function(el) {
+    el.style.width = (el.dataset.pct || 0) + '%';
+  });
+</script>
+{% endblock %}

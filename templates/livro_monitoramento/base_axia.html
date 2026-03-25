@@ -23,6 +23,15 @@
     </div>
 
     <nav class="menu">
+
+      {% if pode_ver_dashboard %}
+        <a href="{% url 'livro:dashboard' %}"
+           class="menu-item {% if request.resolver_match.app_name == 'livro' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+          <span class="ico">📊</span>
+          <span>Dashboard</span>
+        </a>
+      {% endif %}
+
       <a href="{% url 'livro:links' %}"
          class="menu-item {% if request.resolver_match.app_name == 'livro' and request.resolver_match.url_name == 'links' %}active{% endif %}">
         <span class="ico">📌</span>
@@ -140,6 +149,8 @@
   }
 })();
 </script>
+
+{% block extra_js %}{% endblock %}
 
 </body>
 </html>

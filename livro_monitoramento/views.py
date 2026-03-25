@@ -1,15 +1,25 @@
+from datetime import timedelta
+
+import openpyxl
+import pytz
+from django.conf import settings as dj_settings
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.db.models import Count, Q, Prefetch
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
-from django.contrib import messages
-from django.db.models import Count, Q, Prefetch
-import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
+from django.utils import timezone
 
 from .models import Registro, LogAcao, LinkImportante, CategoriaApoio
 from .forms import RegistroForm
 from .filters import RegistroFilter, LogAcaoFilter
+
+
+def usuario_pode_ver_dashboard(user):
+    return user.is_staff or user.groups.filter(name="dashboard").exists()
 
 
 def _diff_registro(old_obj, new_obj):
@@ -149,6 +159,7 @@ def logs_home(request):
         "logs": logs,
     })
 
+
 def links_home(request):
     itens_ativos = LinkImportante.objects.filter(ativo=True).order_by("ordem", "titulo")
 
@@ -169,10 +180,63 @@ def links_home(request):
     })
 
 
-def exportar_excel(request):
-    import pytz
-    from django.conf import settings as dj_settings
+@login_required
+def dashboard_home(request):
+    if not usuario_pode_ver_dashboard(request.user):
+        raise PermissionDenied("Você não tem permissão para acessar o dashboard.")
 
+    hoje = timezone.localdate()
+    inicio_7_dias = hoje - timedelta(days=6)
+
+    registros = Registro.objects.select_related("tipo", "autor").all()
+
+    total_registros = registros.count()
+    registros_hoje = registros.filter(criado_em__date=hoje).count()
+
+    por_tipo = (
+        registros.values("tipo__nome")
+        .annotate(total=Count("id"))
+        .order_by("-total")
+    )
+
+    por_autor = (
+        registros.values("autor__username")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:10]
+    )
+
+    por_dia_qs = (
+        registros.filter(criado_em__date__gte=inicio_7_dias, criado_em__date__lte=hoje)
+        .values("criado_em__date")
+        .annotate(total=Count("id"))
+        .order_by("criado_em__date")
+    )
+
+    mapa_dias = {item["criado_em__date"]: item["total"] for item in por_dia_qs}
+    serie_7_dias = []
+    for i in range(7):
+        dia = inicio_7_dias + timedelta(days=i)
+        serie_7_dias.append({
+            "dia": dia.strftime("%d/%m"),
+            "total": mapa_dias.get(dia, 0),
+            "total_px": mapa_dias.get(dia, 0) * 18,
+        })
+
+    ultimos_registros = registros.order_by("-criado_em")[:10]
+
+    context = {
+        "total_registros": total_registros,
+        "registros_hoje": registros_hoje,
+        "total_tipos": registros.values("tipo").distinct().count(),
+        "por_tipo": list(por_tipo),
+        "por_autor": list(por_autor),
+        "serie_7_dias": serie_7_dias,
+        "ultimos_registros": ultimos_registros,
+    }
+    return render(request, "livro_monitoramento/dashboard.html", context)
+
+
+def exportar_excel(request):
     qs = Registro.objects.select_related("tipo", "autor").all()
     f = RegistroFilter(request.GET, queryset=qs)
     registros = f.qs
