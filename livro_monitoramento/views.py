@@ -169,11 +169,28 @@ def excluir_registro(request, pk):
 def logs_home(request):
     qs = LogAcao.objects.select_related("usuario", "tipo").all()
     f = LogAcaoFilter(request.GET, queryset=qs)
-    logs = f.qs
+
+    per_page_options = [10, 25, 50, 100]
+    try:
+        per_page = int(request.GET.get("per_page", 25))
+    except (ValueError, TypeError):
+        per_page = 25
+    if per_page not in per_page_options:
+        per_page = 25
+
+    paginator = Paginator(f.qs, per_page)
+    page_obj = paginator.get_page(request.GET.get("page", 1))
+
+    get_params = request.GET.copy()
+    get_params.pop("page", None)
+    query_string = get_params.urlencode()
 
     return render(request, "livro_monitoramento/logs_home.html", {
         "filter": f,
-        "logs": logs,
+        "page_obj": page_obj,
+        "per_page": per_page,
+        "per_page_options": per_page_options,
+        "query_string": query_string,
     })
 
 
