@@ -35,6 +35,12 @@
     {{ filter.form.de }}
     {{ filter.form.ate }}
 
+    <select name="per_page" class="input" style="width:auto;" onchange="this.form.submit()">
+      {% for opt in per_page_options %}
+        <option value="{{ opt }}" {% if opt == per_page %}selected{% endif %}>{{ opt }} / página</option>
+      {% endfor %}
+    </select>
+
     <button class="btn btn-primary" type="submit">Filtrar</button>
     <a class="btn btn-ghost" href="{% url 'livro:home' %}">Limpar</a>
     <a class="btn btn-ghost"
@@ -92,7 +98,7 @@
   </div>
 
   <div class="list">
-    {% for r in registros %}
+    {% for r in page_obj %}
       <details class="row">
         <summary class="row-summary">
           <div class="row-left">
@@ -133,6 +139,28 @@
       </div>
     {% endfor %}
   </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="pagination">
+    <span class="muted">
+      {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros
+    </span>
+
+    <div class="pagination-nav">
+      {% if page_obj.has_previous %}
+        <a class="btn btn-ghost" href="?{{ query_string }}&page=1">«</a>
+        <a class="btn btn-ghost" href="?{{ query_string }}&page={{ page_obj.previous_page_number }}">‹</a>
+      {% endif %}
+
+      <span class="page-current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
+      {% if page_obj.has_next %}
+        <a class="btn btn-ghost" href="?{{ query_string }}&page={{ page_obj.next_page_number }}">›</a>
+        <a class="btn btn-ghost" href="?{{ query_string }}&page={{ page_obj.paginator.num_pages }}">»</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 <script>
