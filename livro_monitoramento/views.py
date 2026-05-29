@@ -230,13 +230,15 @@ def dashboard_home(request):
     )
 
     mapa_dias = {item["criado_em__date"]: item["total"] for item in por_dia_qs}
+    max_total = max((mapa_dias.get(inicio_7_dias + timedelta(days=i), 0) for i in range(7)), default=1) or 1
     serie_7_dias = []
     for i in range(7):
         dia = inicio_7_dias + timedelta(days=i)
+        total = mapa_dias.get(dia, 0)
         serie_7_dias.append({
             "dia": dia.strftime("%d/%m"),
-            "total": mapa_dias.get(dia, 0),
-            "total_px": mapa_dias.get(dia, 0) * 18,
+            "total": total,
+            "total_px": round((total / max_total) * 120),
         })
 
     ultimos_registros = registros.order_by("-criado_em")[:10]
