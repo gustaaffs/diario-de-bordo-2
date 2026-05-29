@@ -21,5 +21,4 @@ bd_livro/
 *.log
 
 # Deploy
-deploy/
 deploy_dev/

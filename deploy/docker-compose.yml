@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16
+    container_name: livro_noc_db_v2
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - /opt/livro_noc_v2/volumes/pgdata:/var/lib/postgresql/data
+    networks:
+      - livro_noc_net_v2
+
+  web:
+    build:
+      context: ..
+    container_name: livro_noc_web_v2
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - db
+    volumes:
+      - livro_noc_static_v2:/app/staticfiles
+    networks:
+      - livro_noc_net_v2
+
+  nginx:
+    image: nginx:alpine
+    container_name: livro_noc_nginx_v2
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - livro_noc_static_v2:/static:ro
+    networks:
+      - livro_noc_net_v2
+
+volumes:
+  livro_noc_pgdata_v2:
+  livro_noc_static_v2:
+
+networks:
+  livro_noc_net_v2:
+    name: livro_noc_net_v2
